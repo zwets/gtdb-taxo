@@ -51,33 +51,35 @@ INSERT INTO Ranks VALUES
   (6, "genus"),
   (7, "species");
 
-CREATE TABLE NameRankParent (
-  name TEXT PRIMARY KEY,
+CREATE TABLE NodeRankParent (
+  node TEXT PRIMARY KEY,
   rank_id INTEGER NOT NULL REFERENCES Ranks(rank_id),
-  parent_name TEXT REFERENCES NameRankParent(name)
+  parent_node TEXT REFERENCES NodeRankParent(node)
   );
 
-INSERT INTO NameRankParent VALUES 
+INSERT INTO NodeRankParent VALUES 
   ("d__Archaea", 1, null),
   ("d__Bacteria", 1, null);
 
 CREATE TABLE SpeciesAccession (
-  species_name TEXT NOT NULL PRIMARY KEY REFERENCES Names(name),
+  species_node TEXT NOT NULL PRIMARY KEY REFERENCES NodeRankParent(node),
   accession TEXT NOT NULL
   );
   '
 
-# Database decomposition ----------------------------------------------------
-#
-
-DATABASE_NORMALISE_SQL='
-  '
 
 # Database views creation ---------------------------------------------------
 #
 # Define common views that flatten the database to a virtual single table
 
 DATABASE_VIEWS_SQL='
+
+CREATE VIEW NamesView (
+  name,
+  rank
+  ) AS
+    SELECT SUBSTR(N.node,4), R.rank_name
+    FROM NodeRankParent N NATURAL JOIN Ranks R;
   '
 
 
@@ -133,7 +135,7 @@ import_database () {
     awk 'BEGIN { FS="\t|;"; OFS="\t"; }
          { p = $2
            for (i=3; i<=8; ++i)
-             { print $i, i-2, p; p = $i } 
+             { print $i, i-1, p; p = $i } 
          }
          ' "$INPUT_FILE" | sort -t "$(printf '\t')" -k1,1 -u > "$TMP_NAM_PAR_FILE"
 
@@ -147,7 +149,7 @@ import_database () {
     SELECT \"importing data ...\";
 .separator '\t'
 .import '$TMP_SPC_ACC_FILE' SpeciesAccession
-.import '$TMP_NAM_PAR_FILE' NameRankParent
+.import '$TMP_NAM_PAR_FILE' NodeRankParent
     $DATABASE_NORMALISE_SQL
     $DATABASE_VIEWS_SQL
 " | sqlite3 -batch -bail "$TMP_DBFILE" || {
