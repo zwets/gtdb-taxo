@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #  gtdb-taxo - Query the GTDB taxonomy
-#  Copyright (C) 2017  Marco van Zwetselaar <io@zwets.it>
+#  Copyright (C) 2019  Marco van Zwetselaar <io@zwets.it>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ END {
     close(TAXO_DB)
 }
 function search_name(oper) {
-    sql = "SELECT node_id, rank_name, name FROM NamesView WHERE name "
+    sql = "SELECT rank, name, taxon, accession FROM NamesView WHERE name "
     printf "%s %s ORDER BY name;\n", sql, oper | TAXO_DB
 }
 { search_name(REGEXP ? " REGEXP \"" $0 "\"" : EXACT ? " = \"" $0 "\"" : " LIKE \"%" $0 "%\"") }

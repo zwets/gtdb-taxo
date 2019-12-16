@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-#  taxo-browser - Command line taxonomy browser
-#  Copyright (C) 2017  Marco van Zwetselaar <io@zwets.it>
+#  gtdb-taxo-browser - Command line GTDB taxonomy browser
+#  Copyright (C) 2019  Marco van Zwetselaar <io@zwets.it>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  Home: http://github.com/zwets/taxo
+#  Home: http://github.com/zwets/gtdb-taxo
 
-PRETTY_PRINTFMT='%46s\040%-8s\040%s\n'  # The \040 are escaped spaces
+PRETTY_PRINTFMT='%6d\040%-8s\040%s\n'  # The \040 are escaped spaces
 TABSEP_PRINTFMT='%s\t%s\t%s\n'
 
 # Exit this script with an error message on stderr
@@ -88,9 +88,9 @@ $TAXO_DB -r </dev/null >/dev/null 2>&1 || NO_REGEXP=1
 awk -b -O -v QUIET=$QUIET -v TAXO_DB="$TAXO_DB" -v NO_REGEXP="$NO_REGEXP" -e '
 BEGIN { 
     FS="\t"
-    CUR = "0__root"
+    CUR = 0
     if (!NO_REGEXP) TAXO_RE = TAXO_DB " -r"
-    if (!QUIET) print "Welcome to taxo-browser.  Press 'h' for help or 'q' to quit."
+    if (!QUIET) print "Welcome to gtdb-taxo-browser.  Press h for help or q to quit."
     prompt()
 }
 END {
@@ -106,16 +106,16 @@ function print_rows() {
     }
 }
 function parent_id(i) {
-    printf "SELECT parent_node FROM NamesView WHERE node_id = \"%s\";\n", i |& TAXO_DB
+    printf "SELECT parent_id FROM NamesView WHERE node_id = %d;\n", i |& TAXO_DB
     TAXO_DB |& getline 
     return $1
 }
 function valid_id(i) {
-    printf "SELECT COUNT(*) FROM NamesView WHERE node_id = \"%s\";\n", i |& TAXO_DB
+    printf "SELECT COUNT(*) FROM NamesView WHERE node_id = %d;\n", i |& TAXO_DB
     return TAXO_DB |& getline && $0 == 1
 }
 function show(i) {
-    printf "SELECT node_id, rank_name, name FROM NamesView WHERE node_id = \"%s\"; SELECT 0;\n", i |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE node_id = %d; SELECT 0;\n", i |& TAXO_DB
     print_rows()
 }
 function jump(new) {
@@ -128,14 +128,14 @@ function jump(new) {
     }
 }
 function up() {
-    if (CUR != "0__root") CUR=parent_id(CUR)
+    if (CUR != 0) CUR=parent_id(CUR)
     show(CUR)
 }
 function parent() {
-    if (CUR != "0__root") show(parent_id(CUR))
+    if (CUR != 0) show(parent_id(CUR))
 }
 function recurse_ancestors(i) {
-    if (i != "0__root") {
+    if (i != 0) {
         recurse_ancestors(parent_id(i))
         show(i)
     }
@@ -144,18 +144,18 @@ function ancestry() {
     recurse_ancestors(CUR)
 }
 function children() {
-    printf "SELECT node_id, rank_name, name FROM NamesView WHERE parent_node = \"%s\" AND node_id != \"0__root\"; SELECT 0;\n", CUR |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != 0; SELECT 0;\n", CUR |& TAXO_DB
     print_rows()
 }
 function siblings(  p) { # declare p local
     if (CUR != 1) {
         p = parent_id(CUR)
-        printf "SELECT node_id, rank_name, name FROM NamesView WHERE parent_node = \"%s\" AND node_id != \"%s\"; SELECT 0;\n", p, CUR |& TAXO_DB
+        printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != %d; SELECT 0;\n", p, CUR |& TAXO_DB
         print_rows()
     }
 }
 function descendants_of(p,  a,i) {
-    printf "SELECT node_id, rank_name, name FROM NamesView WHERE parent_node = \"%s\" AND node_id != \"0__root\"; SELECT 0;\n", p |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != 0; SELECT 0;\n", p |& TAXO_DB
     i = 0
     TAXO_DB |& getline 
     while ($1 != 0) {
@@ -169,7 +169,7 @@ function descendants() {
     descendants_of(CUR);
 }
 function like_search(l) {
-    printf "SELECT node_id, rank_name, name FROM NamesView WHERE name LIKE \"%%%s%%\" AND name != \"0__root\"; SELECT 0;\n", l |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE name LIKE \"%%%s%%\" AND node_id != 0; SELECT 0;\n", l |& TAXO_DB
     print_rows()
 }
 function regex_search(r) {
@@ -177,7 +177,7 @@ function regex_search(r) {
         printf "Regular expression search unavailable, SQLite3 lacks the REGEXP extension"
     }
     else {
-        printf "SELECT node_id, rank_name, name FROM NamesView WHERE name REGEXP \"%s\" AND node_id != \"0__root\"; SELECT 0;\n", r |& TAXO_RE
+        printf "SELECT node_id, rank, name FROM NamesView WHERE name REGEXP \"%s\" AND node_id != 0; SELECT 0;\n", r |& TAXO_RE
         TAXO_RE |& getline 
         while ($1 != 0) {
             printf "'$PRINTFMT'", $1, $2, $3
@@ -190,7 +190,7 @@ function help() {
     print
     print "Commands:"
     print "-                ENTER key displays current node ID, rank and name"
-    print "- NODE_ID        jump to node with NODE_ID"
+    print "- NUMBER         jump to node with NUMBER"
     print "- %TEXT          search for nodes whose name contains TEXT"
     print "- /REGEX         search for nodes whose name matches REGEX"
     print "- u(p)           move current node pointer to parent node"
@@ -208,7 +208,7 @@ function prompt() {
 # Repeat for every line
 
 /^[h\?](elp)?$/         { help() }
-/^[dpcofgs]__.+$/       { jump($0) }
+/^[0-9]+$/              { jump($0) }
 /^$/                    { show(CUR) }
 /^\/.+/                 { regex_search(substr($0,2,length($0)-1)) }
 /^%.+/                  { like_search(substr($0,2,length($0)-1)) }
