@@ -1,0 +1,102 @@
+#!/bin/sh
+#
+#  gtdb-taxo - Query the GTDB taxonomy
+#  Copyright (C) 2017  Marco van Zwetselaar <io@zwets.it>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Home: http://github.com/zwets/gtdb-taxo
+
+# Exit this script with an error message on stderr
+err_exit() {
+    echo "$(basename "$0"): $*" >&2
+    exit 1
+}
+
+# Show usage information and exit
+usage_exit() {
+    echo "
+Usage: $(basename $0) [OPTIONS] [NAME|- ...]
+
+  Retrieve taxonomy information from the GTDB taxonomy database.
+
+  Lookup each NAME in the GTDB taxonomy.  The default is to match partially.
+  With options -e or -r search for exact and regex matches respectively.
+  
+  When NAME is '-', read NAMEs from standard input.  When no arguments are
+  given, switch to interactive mode (gtdb-taxo-browser).
+
+  OPTIONS
+   -e, --exact      Search for the exact NAME (default is match anywhere)
+   -r, --regex      Search for the regular expression NAME (excludes -e)
+   -x, --extended   Output extended information for each match
+   -h, --help       This information
+
+  This tool uses at its backend the gtdb-taxo-db tool.  It needs to initally
+  import the GTDBTk taxonomy database.  See 'gtdb-taxo-db --help'.
+
+  Note that the --regex option requires the REGEXP extension to SQLite3.
+  On Ubuntu this extension is in package sqlite3-pcre.
+" >&2
+    exit ${1:-1}
+}
+
+# Parse options
+
+unset OPT_E OPT_R OPT_X
+while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
+    case $1 in
+    -e|--exact)     OPT_E=1 ;;
+    -r|--regexp)    OPT_R=1 ;;
+    -h|--help)      usage_exit 0 ;;
+    *)              usage_exit   ;;
+    esac
+    shift
+done
+
+# If no arguments given, switch to gtdb-taxo-browser
+
+[ $# -ne 0 ] || exec "$(dirname "$0")/gtdb-taxo-browser"
+
+# Locate the taxo-db backend
+
+TAXO_DB="$(which gtdb-taxo-db 2>/dev/null)"
+[ -n "$TAXO_DB" ] || TAXO_DB="$(dirname "$0")/gtdb-taxo-db"
+[ -x "$TAXO_DB" ] || err_exit "cannot find gtdb-taxo-db"
+
+# Parse arguments, piping them into taxo-db
+
+if [ "$1" = "-" ]; then
+    cat
+else
+    while [ $# -ne 0 ]; do
+        echo "$1"
+        shift
+    done
+fi | awk -b -O -v EXACT="${OPT_E:-0}" -v REGEXP="${OPT_R:-0}" -v TAXO_DB="$TAXO_DB" -e '
+BEGIN {
+    if (REGEXP) TAXO_DB = TAXO_DB " -r"
+    FS="\t"
+}
+END {
+    close(TAXO_DB)
+}
+function search_name(oper) {
+    sql = "SELECT node_id, rank_name, name FROM NamesView WHERE name "
+    printf "%s %s ORDER BY name;\n", sql, oper | TAXO_DB
+}
+{ search_name(REGEXP ? " REGEXP \"" $0 "\"" : EXACT ? " = \"" $0 "\"" : " LIKE \"%" $0 "%\"") }
+'
+
+# vim: sts=4:sw=4:ai:si:et

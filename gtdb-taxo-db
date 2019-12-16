@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  taxo-db - SQL serve the taxonomy database
+#  gtdb-taxo-db - SQL serve the GTDB taxonomy
 #  Copyright (C) 2017  Marco van Zwetselaar <io@zwets.it>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  Home: http://github.com/zwets/taxo
+#  Home: http://github.com/zwets/gtdb-taxo
 
 
 # Constants -----------------------------------------------------------------
@@ -52,7 +52,7 @@ INSERT INTO Ranks VALUES
   (7, "species");
 
 CREATE TABLE NodeRankParent (
-  node TEXT PRIMARY KEY,
+  node_id TEXT PRIMARY KEY,
   rank_id INTEGER NOT NULL REFERENCES Ranks(rank_id),
   parent_node TEXT REFERENCES NodeRankParent(node)
   );
@@ -62,23 +62,17 @@ INSERT INTO NodeRankParent VALUES
   ("d__Bacteria", 1, null);
 
 CREATE TABLE SpeciesAccession (
-  species_node TEXT NOT NULL PRIMARY KEY REFERENCES NodeRankParent(node),
+  species_node TEXT NOT NULL PRIMARY KEY REFERENCES NodeRankParent(node_id),
   accession TEXT NOT NULL
   );
-  '
-
-
-# Database views creation ---------------------------------------------------
-#
-# Define common views that flatten the database to a virtual single table
-
-DATABASE_VIEWS_SQL='
 
 CREATE VIEW NamesView (
+  node_id,
+  parent_node,
   name,
-  rank
+  rank_name
   ) AS
-    SELECT SUBSTR(N.node,4), R.rank_name
+    SELECT N.node_id, N.parent_node, SUBSTR(N.node_id,4), R.rank_name
     FROM NodeRankParent N NATURAL JOIN Ranks R;
   '
 
@@ -249,7 +243,7 @@ done
 
 if [ -n "$IMPORT_TSV" ]; then
     import_database "$IMPORT_TSV" || err_exit "taxonomy database import failed"
-    echo "$(basename "$0"): database imported"
+    emit "database imported"
     exit 0
 fi
 
