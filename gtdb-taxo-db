@@ -43,6 +43,7 @@ CREATE TABLE Ranks (
   );
 
 INSERT INTO Ranks VALUES 
+  (0, ""),
   (1, "domain"),
   (2, "phylum"),
   (3, "class"),
@@ -58,8 +59,9 @@ CREATE TABLE NodeRankParent (
   );
 
 INSERT INTO NodeRankParent VALUES 
-  ("d__Archaea", 1, null),
-  ("d__Bacteria", 1, null);
+  ("0__root", 0, null),
+  ("d__Archaea", 1, "0__root"),
+  ("d__Bacteria", 1, "0__root");
 
 CREATE TABLE SpeciesAccession (
   species_node TEXT NOT NULL PRIMARY KEY REFERENCES NodeRankParent(node_id),
