@@ -88,7 +88,7 @@ $TAXO_DB -r </dev/null >/dev/null 2>&1 || NO_REGEXP=1
 awk -b -O -v QUIET=$QUIET -v TAXO_DB="$TAXO_DB" -v NO_REGEXP="$NO_REGEXP" -e '
 BEGIN { 
     FS="\t"
-    CUR = 0
+    CUR = 1
     if (!NO_REGEXP) TAXO_RE = TAXO_DB " -r"
     if (!QUIET) print "Welcome to gtdb-taxo-browser.  Press h for help or q to quit."
     prompt()
@@ -106,12 +106,12 @@ function print_rows() {
     }
 }
 function parent_id(i) {
-    printf "SELECT parent_id FROM NamesView WHERE node_id = %d;\n", i |& TAXO_DB
+    printf "SELECT parent_id FROM Nodes WHERE node_id = %d;\n", i |& TAXO_DB
     TAXO_DB |& getline 
     return $1
 }
 function valid_id(i) {
-    printf "SELECT COUNT(*) FROM NamesView WHERE node_id = %d;\n", i |& TAXO_DB
+    printf "SELECT COUNT(*) FROM Nodes WHERE node_id = %d;\n", i |& TAXO_DB
     return TAXO_DB |& getline && $0 == 1
 }
 function show(i) {
@@ -128,11 +128,11 @@ function jump(new) {
     }
 }
 function up() {
-    if (CUR != 0) CUR=parent_id(CUR)
+    if (CUR != 1) CUR=parent_id(CUR)
     show(CUR)
 }
 function parent() {
-    if (CUR != 0) show(parent_id(CUR))
+    if (CUR != 1) show(parent_id(CUR))
 }
 function recurse_ancestors(i) {
     if (i != 0) {
@@ -144,7 +144,7 @@ function ancestry() {
     recurse_ancestors(CUR)
 }
 function children() {
-    printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != 0; SELECT 0;\n", CUR |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != 1; SELECT 0;\n", CUR |& TAXO_DB
     print_rows()
 }
 function siblings(  p) { # declare p local
@@ -155,7 +155,7 @@ function siblings(  p) { # declare p local
     }
 }
 function descendants_of(p,  a,i) {
-    printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != 0; SELECT 0;\n", p |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE parent_id = %d AND node_id != 1; SELECT 0;\n", p |& TAXO_DB
     i = 0
     TAXO_DB |& getline 
     while ($1 != 0) {
@@ -169,7 +169,7 @@ function descendants() {
     descendants_of(CUR);
 }
 function like_search(l) {
-    printf "SELECT node_id, rank, name FROM NamesView WHERE name LIKE \"%%%s%%\" AND node_id != 0; SELECT 0;\n", l |& TAXO_DB
+    printf "SELECT node_id, rank, name FROM NamesView WHERE name LIKE \"%%%s%%\" AND node_id != 1; SELECT 0;\n", l |& TAXO_DB
     print_rows()
 }
 function regex_search(r) {
@@ -177,7 +177,7 @@ function regex_search(r) {
         printf "Regular expression search unavailable, SQLite3 lacks the REGEXP extension"
     }
     else {
-        printf "SELECT node_id, rank, name FROM NamesView WHERE name REGEXP \"%s\" AND node_id != 0; SELECT 0;\n", r |& TAXO_RE
+        printf "SELECT node_id, rank, name FROM NamesView WHERE name REGEXP \"%s\" AND node_id != 1; SELECT 0;\n", r |& TAXO_RE
         TAXO_RE |& getline 
         while ($1 != 0) {
             printf "'$PRINTFMT'", $1, $2, $3

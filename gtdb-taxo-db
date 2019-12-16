@@ -59,8 +59,8 @@ CREATE TEMPORARY TABLE TmpNodes (
   parent_taxon TEXT
   );
 
-INSERT INTO TmpNodes VALUES 
-  (0, 0, "0__root", "0__root");
+-- INSERT INTO TmpNodes VALUES 
+--   (1, 0, "0__root", "0__root");
 
 CREATE TABLE Nodes (
   node_id INTEGER PRIMARY KEY,
@@ -148,6 +148,7 @@ import_database () {
     # Produce the nodes import file
     emit "creating $TMP_NODES_FILE"
     awk 'BEGIN { FS="\t|;"; OFS="\t"; 
+            print 0, "0__root", "0__root"
             print 1, "d__Archaea", "0__root"
             print 1, "d__Bacteria", "0__root"
          }
