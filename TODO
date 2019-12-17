@@ -1,0 +1,12 @@
+TODO's
+
+- Add reverse lookup (accession -> taxid)
+
+- Import the full accession listings from the GTDB release ({ar122,bac120}_taxonomy.tsv).
+  These have all (143,000+) genomes used to create the GTDB.
+
+- Import the metadata tables from the GTDB.
+  These have lots of data on all accessions (see metadata_field_desc.tsv)
+
+- Add NCBI <-> GTDB translation using the metadata
+

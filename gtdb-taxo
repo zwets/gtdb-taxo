@@ -94,7 +94,7 @@ END {
 }
 function search_name(oper) {
     sql = "SELECT rank, name, taxon, accession FROM NamesView WHERE name "
-    printf "%s %s ORDER BY name;\n", sql, oper | TAXO_DB
+    printf ".mode tabs\n%s %s ORDER BY name;\n", sql, oper | TAXO_DB
 }
 { search_name(REGEXP ? " REGEXP \"" $0 "\"" : EXACT ? " = \"" $0 "\"" : " LIKE \"%" $0 "%\"") }
 '

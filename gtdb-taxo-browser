@@ -114,6 +114,11 @@ function valid_id(i) {
     printf "SELECT COUNT(*) FROM Nodes WHERE node_id = %d;\n", i |& TAXO_DB
     return TAXO_DB |& getline && $0 == 1
 }
+function name(i) {
+    printf "SELECT name FROM NamesView WHERE node_id = %d;\n", i |& TAXO_DB
+    TAXO_DB |& getline
+    return $1
+}
 function show(i) {
     printf "SELECT node_id, rank, name FROM NamesView WHERE node_id = %d; SELECT 0;\n", i |& TAXO_DB
     print_rows()
@@ -135,7 +140,7 @@ function parent() {
     if (CUR != 1) show(parent_id(CUR))
 }
 function recurse_ancestors(i) {
-    if (i != 0) {
+    if (i != 1) {
         recurse_ancestors(parent_id(i))
         show(i)
     }
@@ -187,22 +192,22 @@ function regex_search(r) {
 }
 function help() {
     print "gtdb-taxo - Navigate the GTDB taxonomy"
-    print
+    print ""
     print "Commands:"
-    print "-                ENTER key displays current node ID, rank and name"
-    print "- NUMBER         jump to node with NUMBER"
-    print "- %TEXT          search for nodes whose name contains TEXT"
-    print "- /REGEX         search for nodes whose name matches REGEX"
-    print "- u(p)           move current node pointer to parent node"
-    print "- p(arent)       show parent but do not move current node pointer there"
-    print "- a(ncestors)    show lineage of current node all the way up to root"
-    print "- s(iblings)     show all siblings of the current node"
-    print "- c(hildren)     show all children of the current node"
-    print "- D(escendants)  show all descendants of the current node"
+    print "-                ENTER key displays current pointer"
+    print "- NUMBER         jump to taxon marked with NUMBER"
+    print "- %TEXT          search for taxa whose name contains TEXT"
+    print "- /REGEX         search for taxo whose name matches REGEX"
+    print "- u(p)           move current taxon pointer to parent taxon"
+    print "- p(arent)       show parent but do not move current pointer there"
+    print "- a(ncestors)    show lineage of current taxon all the way up to root"
+    print "- s(iblings)     show all siblings of the current taxon"
+    print "- c(hildren)     show all children of the current taxon"
+    print "- D(escendants)  show all descendants of the current taxon"
     print "- q(uit) or ^D   leave"
 }
 function prompt() {
-    if (!QUIET) printf "\nCommand? "
+    if (!QUIET) printf "\n(" name(CUR) ") ? "
 }
 
 # Repeat for every line
