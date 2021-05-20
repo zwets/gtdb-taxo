@@ -30,33 +30,36 @@ Home: <https://github.com/zwets/gtdb-taxo>
   `gtdb-taxo` requires the `sqlite3` and `GNU awk` programs.  These are often
   already present on your system, or else easily installable.  On Debian/Ubuntu:
 
-      sudo apt-get install sqlite3 gawk
+        sudo apt-get install sqlite3 gawk
 
-  If you want to search using regular expressions, then install the PCRE
-  extension for `sqlite3`:
+  If you want to be able to search using regular expressions, then install the
+  `sqlite3` PCRE extension:
 
-      sudo apt-get install sqlite3-pcre gawk
-
-  Your distro will have comparable instructions.
+        sudo apt-get install sqlite3-pcre sqlite3 gawk
 
 * Clone the repository
 
-      git clone https://github.com/zwets/gtdb-taxo.git
-      cd gtdb-taxo
-      ./gtdb-taxo --help
+        git clone https://github.com/zwets/gtdb-taxo.git
+        cd gtdb-taxo
+        ./gtdb-taxo --help
 
-* Import the taxonomy database
+* Obtain the taxonomy database
 
   If you are working with the GTDB, then it is likely you have installed
   [GTDBTk](https://github.com/Ecogenomics/GTDBTk) and have set
   `GTDBTK_DATA_PATH` to point to its data directory.  The file to import
-  is then `$GTDBTK_DATA_PATH/taxonomy/gtdb_taxonomy.tsv`:
+  is then `$GTDBTK_DATA_PATH/taxonomy/gtdb_taxonomy.tsv`.
 
-      gtdb-taxo-db --import "$GTDBTK_DATA_PATH/taxonomy/gtdb_taxonomy.tsv"
-
-  If you do not have GTDBTk installed, see its installation instructions
-  for the download location of its database, and extract `gtdb_taxonomy.tsv`
+  If you do not have GTDBTk installed, find the download location of its
+  database in its installation instructions, and extract `gtdb_taxonomy.tsv`
   from it.
+
+* Import the taxonomy database
+
+        gtdb-taxo-db --import "$GTDBTK_DATA_PATH/taxonomy/gtdb_taxonomy.tsv"
+
+  By default the database is installed in `~/.gtdb-taxo/gtdb-taxo.db`.  If env
+  variable `GTDB_TAXO_DB` is set, it will use that file location.
 
 * [Optional] Add `gtdb-taxo` to your path
 
@@ -72,7 +75,7 @@ Invoke with `--help` to see usage instructions.  Below are some examples to get 
 
 ### Examples: Command-line Use
 
-The default is to search on any part of the taxon name:
+Search on any part of the taxon name:
 
 ```bash
 $ ./gtdb-taxo Staph
@@ -90,15 +93,14 @@ The output are four tab-separated columns.  These list rank, name, unique name (
 used by GTDB), and, for species, accession of the representative genome (see the 
 [GTDBTk](doi:10.1101/771964) paper).
 
-
-*Exact search (`-e` `--exact`):*
+*Exact* search (`-e`, `--exact`):
 
 ```bash
 $ gtdb-taxo -e 'Tranquillimonas'
 genus   Tranquillimonas g__Tranquillimonas
 ```
 
-*Regular expression search (`-r`, `--regex`):*
+*Regular expression* search (`-r`, `--regex`):
 
 ```bash
 $ gtdb-taxo -r '.*monas$'

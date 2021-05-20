@@ -25,7 +25,8 @@
 PRG_NAME="$(basename "$0")"
 
 # Default location for the SQLite database
-DEFAULT_SQLITE_DB="$HOME/.${PRG_NAME}/gtdb-taxo.db"
+DEFAULT_SQLITE_DB="$HOME/.gtdb-taxo/gtdb-taxo.db"
+SQLITE_DB="${GTDB_TAXO_DB:-"$DEFAULT_SQLITE_DB"}"
 
 
 # Database definition -------------------------------------------------------
@@ -233,36 +234,15 @@ SQLITE_DB="$DEFAULT_SQLITE_DB"
 unset IMPORT_TSV KEEP ENABLE_REGEXP VERBOSE
 while [ $# -ne 0 -a "$(expr "$1" : '\(.\).*')" = "-" ]; do
     case $1 in
-    -d|--db)
-        shift
-        [ $# -ge 1 ] || usage_exit
-        SQLITE_DB="$1"
-        ;;
-    --db=*)
-        SQLITE_DB="${1#--db=}"
-        ;;
-    -i|--import)
-        shift
-        [ $# -ge 1 ] || usage_exit
-        IMPORT_TSV="$1"
-        ;;
-    --import=*)
-        IMPORT_TSV="${1#--import=}"
-        ;;
-    -k|--keep)
-        KEEP=1
-        ;;
-    -r|--regex*)
-        ENABLE_REGEXP=1
-        ;;
-    -v|--verbose)
-        VERBOSE=1
-        ;;
-    -h|--help)
-        usage_exit 0
-        ;;
-    *) usage_exit
-        ;;
+    -d|--db)      shift && SQLITE_DB="$1" || usage_exit ;;
+    --db=*)       SQLITE_DB="${1#--db=}" ;;
+    -i|--import)  shift && IMPORT_TSV="$1" || usage_exit ;;
+    --import=*)   IMPORT_TSV="${1#--import=}" ;;
+    -k|--keep)    KEEP=1 ;;
+    -r|--regex*)  ENABLE_REGEXP=1 ;;
+    -v|--verbose) VERBOSE=1 ;;
+    -h|--help)    usage_exit 0 ;;
+    *) usage_exit ;;
     esac
     shift
 done
