@@ -199,7 +199,9 @@ Usage: $PRG_NAME [OPTIONS] [SQL]
   Query the GTDB taxonomy using SQL.
 
   Options
-   -d, --db DBFILE       Database file (default: $(echo $DEFAULT_SQLITE_DB | sed -e "s,^$HOME,~,"))
+   -d, --db DBFILE       Name of database file [$SQLITE_DB]
+                         Default is ~/.gtdb-taxo/gtdb-taxo.db or the
+                         file pointed to by GTDB_TAXO_DB if set)
    -i, --import TSVFILE  Create or update database from TSVFILE (may be '-')
    -k, --keep            Do not delete temporary files (for debugging)
    -r, --regexp          Enable REGEXP extension, or exit with error
@@ -230,7 +232,6 @@ which sqlite3 >/dev/null 2>&1 || err_exit "sqlite3 command not found (is SQLite3
 
 # Parse options
 
-SQLITE_DB="$DEFAULT_SQLITE_DB"
 unset IMPORT_TSV KEEP ENABLE_REGEXP VERBOSE
 while [ $# -ne 0 -a "$(expr "$1" : '\(.\).*')" = "-" ]; do
     case $1 in
